@@ -11,8 +11,10 @@ repositories {
     mavenCentral()
 }
 
+val arrowVersion = "0.8.2"
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation("io.arrow-kt:arrow-core:$arrowVersion")
 }
 
 tasks.withType<KotlinCompile> {

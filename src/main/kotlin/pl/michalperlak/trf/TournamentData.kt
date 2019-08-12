@@ -17,5 +17,6 @@ data class TournamentData(
     val deputyArbiters: List<Arbiter>,
     val rateOfPlay: String,
     val roundDates: List<LocalDateTime>,
-    val playersData: List<PlayerData>
+    val playersData: List<PlayerData>,
+    val teamsData: List<TeamData>
 )
