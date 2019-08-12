@@ -1,8 +1,7 @@
 package pl.michalperlak.trf
 
-class Federation {
-
+data class Federation(val name: String) {
     companion object {
-        val UNKNOWN: Federation = Federation()
+        val UNKNOWN: Federation = Federation("")
     }
 }
