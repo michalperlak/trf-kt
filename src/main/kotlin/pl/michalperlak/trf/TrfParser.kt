@@ -1,6 +1,7 @@
 package pl.michalperlak.trf
 
 import arrow.core.Try
+import arrow.core.toOption
 import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
@@ -33,14 +34,14 @@ class TrfParser {
         return TournamentData(
             name = data[TournamentDataCode.TournamentName]?.first() ?: "",
             city = data[TournamentDataCode.City]?.first() ?: "",
-            federation = data[TournamentDataCode.Federation]?.let { getFederation(it.first()) } ?: Federation.UNKNOWN,
+            federation = data[TournamentDataCode.Federation]?.let { getFederation(it.first()) }.toOption(),
             startDate = data[TournamentDataCode.DateOfStart]?.let { getDate(it.first()) } ?: LocalDate.now(),
             endDate = data[TournamentDataCode.DateOfEnd]?.let { getDate(it.first()) } ?: LocalDate.now(),
             numberOfPlayers = data[TournamentDataCode.NumberOfPlayers]?.first()?.toIntOrNull() ?: 0,
             numberOfRatedPlayers = data[TournamentDataCode.NumberOfRatedPlayers]?.first()?.toIntOrNull() ?: 0,
             numberOfTeams = data[TournamentDataCode.NumberOfTeams]?.first()?.toIntOrNull() ?: 0,
             type = data[TournamentDataCode.TypeOfTournament]?.first() ?: "",
-            chiefArbiter = data[TournamentDataCode.ChiefArbiter]?.let { getArbiter(it.first()) } ?: Arbiter.UNKNOWN,
+            chiefArbiter = data[TournamentDataCode.ChiefArbiter]?.let { getArbiter(it.first()) }.toOption(),
             deputyArbiters = data[TournamentDataCode.DeputyChiefArbiter]?.let { getDeputyArbiters(it.first()) }
                 ?: emptyList(),
             rateOfPlay = data[TournamentDataCode.AllotedTimes]?.first() ?: "",
@@ -61,7 +62,17 @@ class TrfParser {
         .split("\\s+".toRegex())
         .map { LocalDate.parse(it.trim(), ROUND_DATE_FORMAT) }
 
-    private fun getArbiter(arbiterLine: String): Arbiter = TODO()
+    private fun getArbiter(arbiterLine: String): Arbiter {
+        val parts = arbiterLine
+            .split("\\s+".toRegex())
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        return Arbiter(
+            name = parts[1],
+            id = if (parts.size > 2) parts[2].substring(1, parts[2].length - 1) else "",
+            title = ArbiterTitle.from(parts[0])
+        )
+    }
 
     private fun getDeputyArbiters(deputyArbitersLine: String): List<Arbiter> = TODO()
 

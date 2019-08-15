@@ -1,6 +1,8 @@
 package pl.michalperlak.trf
 
-enum class TournamentDataCode(val code: String) {
+enum class TournamentDataCode(
+    val code: String
+) {
     TournamentName("012"),
     City("022"),
     Federation("032"),

@@ -12,9 +12,6 @@ data class PlayerData(
     val federation: Federation,
     val fideId: Long,
     val birthDate: LocalDate,
-    val points: Points
-) {
-    companion object {
-        fun parse(line: String): PlayerData = TODO()
-    }
-}
+    val points: Points,
+    val results: List<PlayerGameResult>
+)
