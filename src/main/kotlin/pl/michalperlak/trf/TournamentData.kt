@@ -1,7 +1,6 @@
 package pl.michalperlak.trf
 
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 data class TournamentData(
     val name: String,
@@ -16,7 +15,7 @@ data class TournamentData(
     val chiefArbiter: Arbiter,
     val deputyArbiters: List<Arbiter>,
     val rateOfPlay: String,
-    val roundDates: List<LocalDateTime>,
+    val roundDates: List<LocalDate>,
     val playersData: List<PlayerData>,
     val teamsData: List<TeamData>
 )
