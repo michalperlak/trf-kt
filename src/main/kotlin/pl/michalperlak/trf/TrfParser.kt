@@ -42,7 +42,7 @@ class TrfParser {
             numberOfTeams = data[TournamentDataCode.NumberOfTeams]?.first()?.toIntOrNull() ?: 0,
             type = data[TournamentDataCode.TypeOfTournament]?.first() ?: "",
             chiefArbiter = data[TournamentDataCode.ChiefArbiter]?.let { getArbiter(it.first()) }.toOption(),
-            deputyArbiters = data[TournamentDataCode.DeputyChiefArbiter]?.let { getDeputyArbiters(it.first()) }
+            deputyArbiters = data[TournamentDataCode.DeputyChiefArbiter]?.map { getArbiter(it) }
                 ?: emptyList(),
             rateOfPlay = data[TournamentDataCode.AllotedTimes]?.first() ?: "",
             roundDates = data[TournamentDataCode.RoundDates]?.let { getRoundDates(it.first()) } ?: emptyList(),
@@ -74,9 +74,25 @@ class TrfParser {
         )
     }
 
-    private fun getDeputyArbiters(deputyArbitersLine: String): List<Arbiter> = TODO()
+    private fun getPlayerData(playerLine: String): PlayerData {
+        return PlayerData(
+            startRank = playerLine.substring(0, 4).trim().toInt(),
+            gender = Gender.from(playerLine[5]),
+            title = Title.from(playerLine.substring(6, 9).trim()),
+            name = playerLine.substring(10, 43).trim(),
+            fideRating = playerLine.substring(44, 48).trim().toInt(),
+            federation = Federation(playerLine.substring(49, 52).trim()),
+            fideId = playerLine.substring(53, 64).trim().toLong(),
+            birthDate = Try.invoke { getBirthDate(playerLine.substring(65, 75).trim()) }.toOption(),
+            points = playerLine.substring(76, 80).trim().toDouble(),
+            rank = playerLine.substring(81, 85).trim().toInt(),
+            results = getPlayerResults(playerLine.substring(87).trim())
+        )
+    }
 
-    private fun getPlayerData(playerLine: String): PlayerData = TODO()
+    private fun getBirthDate(formattedDate: String): LocalDate = LocalDate.parse(formattedDate, BIRTH_DATE_FORMAT)
+
+    private fun getPlayerResults(results: String): List<PlayerGameResult> = TODO()
 
     private fun getTeamData(teamLine: String): TeamData = TODO()
 
@@ -89,5 +105,6 @@ class TrfParser {
         private const val LINE_CODE_LENGTH = 4
         private val START_END_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy")
         private val ROUND_DATE_FORMAT = DateTimeFormatter.ofPattern("yy/MM/dd")
+        private val BIRTH_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd")
     }
 }
