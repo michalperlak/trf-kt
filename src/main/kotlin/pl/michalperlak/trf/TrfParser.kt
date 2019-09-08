@@ -1,6 +1,7 @@
 package pl.michalperlak.trf
 
 import arrow.core.Try
+import arrow.core.getOrElse
 import arrow.core.toOption
 import java.io.InputStream
 import java.nio.charset.Charset
@@ -92,9 +93,43 @@ class TrfParser {
 
     private fun getBirthDate(formattedDate: String): LocalDate = LocalDate.parse(formattedDate, BIRTH_DATE_FORMAT)
 
-    private fun getPlayerResults(results: String): List<PlayerGameResult> = TODO()
+    private fun getPlayerResults(results: String): List<PlayerGameResult> {
+        tailrec fun readPlayerResult(
+            readResults: List<PlayerGameResult>,
+            missingResults: String
+        ): List<PlayerGameResult> =
+            if (missingResults.isBlank()) {
+                readResults
+            } else {
+                val resultString = missingResults.take(10)
+                val result = PlayerGameResult(
+                    opponentId = PlayerId(resultString.substring(0, 5).trim()),
+                    gameColor = GameColor.from(resultString.substring(5, 8).trim())
+                        .getOrElse { GameColor.NotPaired },
+                    result = GameResult.from(resultString.substring(8).trim())
+                        .getOrElse { GameResult.ZeroPointBye }
+                )
+                readPlayerResult(readResults + result, missingResults.drop(10))
+            }
+        return readPlayerResult(mutableListOf(), results)
+    }
 
-    private fun getTeamData(teamLine: String): TeamData = TODO()
+    private fun getTeamData(teamLine: String): TeamData {
+        val parts = teamLine
+            .split("\\s+".toRegex())
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+        val teamName = parts[0]
+        tailrec fun readTeamMember(teamLineParts: List<String>, teamMembers: List<PlayerId>): List<PlayerId> =
+            if (teamLineParts.isEmpty()) teamMembers
+            else readTeamMember(teamLineParts.drop(1), teamMembers + PlayerId(teamLineParts.first().trim()))
+
+        val players = readTeamMember(parts.drop(1), mutableListOf())
+        return TeamData(
+            name = teamName,
+            players = players
+        )
+    }
 
     private fun extractLineCode(line: String): TournamentDataCode {
         val code = line.substring(0, 4).trim()

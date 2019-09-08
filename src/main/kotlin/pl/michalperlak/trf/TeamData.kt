@@ -1,5 +1,6 @@
 package pl.michalperlak.trf
 
-class TeamData {
-
-}
+data class TeamData(
+    val name: String,
+    val players: List<PlayerId>
+)
