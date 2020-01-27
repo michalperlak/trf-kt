@@ -1,5 +1,7 @@
 package pl.michalperlak.trf
 
+import arrow.core.Option
+
 enum class TournamentDataCode(
     val code: String
 ) {
@@ -17,11 +19,13 @@ enum class TournamentDataCode(
     AllotedTimes("122"),
     RoundDates("132"),
     PlayerData("001"),
-    TeamData("013");
+    TeamData("013"),
+    Unknown("");
 
     companion object {
-        fun from(code: String): TournamentDataCode =
+        fun from(code: String): Option<TournamentDataCode> = Option.fromNullable(
             values()
-                .first { it.name.equals(code, ignoreCase = true) }
+                .firstOrNull { it.code.equals(code, ignoreCase = true) }
+        )
     }
 }

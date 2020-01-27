@@ -53,7 +53,7 @@ class TrfParser {
     }
 
     private fun extractLineValue(line: String): String =
-        if (line.length > LINE_CODE_LENGTH) line.substring(LINE_CODE_LENGTH).trim() else ""
+        if (line.length > LINE_CODE_LENGTH) line.substring(LINE_CODE_LENGTH) else ""
 
     private fun getFederation(federationLine: String): Federation = Federation(federationLine)
 
@@ -76,6 +76,7 @@ class TrfParser {
     }
 
     private fun getPlayerData(playerLine: String): PlayerData {
+        println(playerLine)
         return PlayerData(
             startRank = playerLine.substring(0, 4).trim().toInt(),
             gender = Gender.from(playerLine[5]),
@@ -87,7 +88,7 @@ class TrfParser {
             birthDate = Try.invoke { getBirthDate(playerLine.substring(65, 75).trim()) }.toOption(),
             points = playerLine.substring(76, 80).trim().toDouble(),
             rank = playerLine.substring(81, 85).trim().toInt(),
-            results = getPlayerResults(playerLine.substring(87).trim())
+            results = getPlayerResults(playerLine.substring(87))
         )
     }
 
@@ -104,7 +105,7 @@ class TrfParser {
                 val resultString = missingResults.take(10)
                 val result = PlayerGameResult(
                     opponentId = PlayerId(resultString.substring(0, 5).trim()),
-                    gameColor = GameColor.from(resultString.substring(5, 8).trim())
+                    gameColor = GameColor.from(resultString.substring(5, 7).trim())
                         .getOrElse { GameColor.NotPaired },
                     result = GameResult.from(resultString.substring(8).trim())
                         .getOrElse { GameResult.ZeroPointBye }
@@ -133,7 +134,9 @@ class TrfParser {
 
     private fun extractLineCode(line: String): TournamentDataCode {
         val code = line.substring(0, 4).trim()
-        return TournamentDataCode.from(code)
+        return TournamentDataCode
+            .from(code)
+            .getOrElse { TournamentDataCode.Unknown }
     }
 
     companion object {

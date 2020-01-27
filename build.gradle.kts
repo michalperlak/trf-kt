@@ -12,9 +12,17 @@ repositories {
 }
 
 val arrowVersion = "0.8.2"
+val junitVersion = "5.3.2"
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("io.arrow-kt:arrow-core:$arrowVersion")
+    testImplementation ("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+    testImplementation ("org.junit.jupiter:junit-jupiter-params:$junitVersion")
+    testRuntimeOnly ("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
+}
+
+val test by tasks.getting(Test::class) {
+    useJUnitPlatform { }
 }
 
 tasks.withType<KotlinCompile> {
