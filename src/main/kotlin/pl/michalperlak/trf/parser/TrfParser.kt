@@ -1,13 +1,10 @@
 package pl.michalperlak.trf.parser
 
-import arrow.core.*
-import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.BIRTH_DATE_FORMAT
-import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.ROUND_DATE_FORMAT
-import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.START_END_DATE_FORMAT
-import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.YEAR_ONLY_FORMAT
-import pl.michalperlak.trf.parser.TrfParser.Companion.PlayerResult.RESULT_LENGTH
+import arrow.core.Try
+import arrow.core.getOrElse
+import arrow.core.toOption
 import pl.michalperlak.trf.model.*
-import pl.michalperlak.trf.util.parseDate
+import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.ROUND_DATE_FORMAT
 import pl.michalperlak.trf.util.splitByWhitespace
 import java.io.InputStream
 import java.nio.charset.Charset
@@ -19,6 +16,10 @@ import java.time.format.DateTimeFormatter
 import java.util.stream.Collectors
 
 class TrfParser {
+    private val startEndDateParser = StartEndDateParser(LocalDate.MIN)
+    private val playerDataParser = PlayerDataParser()
+    private val teamDataParser = TeamDataParser()
+
     fun parse(trfFile: Path, charset: Charset = StandardCharsets.UTF_8): Try<TournamentData> = Try {
         val lines = Files.readAllLines(trfFile, charset)
         parseLines(lines)
@@ -42,8 +43,8 @@ class TrfParser {
             name = data[TournamentDataCode.TournamentName]?.first() ?: "",
             city = data[TournamentDataCode.City]?.first() ?: "",
             federation = data[TournamentDataCode.Federation]?.let { getFederation(it.first()) }.toOption(),
-            startDate = data[TournamentDataCode.DateOfStart]?.let { getDate(it.first()) } ?: LocalDate.now(),
-            endDate = data[TournamentDataCode.DateOfEnd]?.let { getDate(it.first()) } ?: LocalDate.now(),
+            startDate = startEndDateParser.parse(data[TournamentDataCode.DateOfStart]),
+            endDate = startEndDateParser.parse(data[TournamentDataCode.DateOfEnd]),
             numberOfPlayers = data[TournamentDataCode.NumberOfPlayers]?.first()?.toIntOrNull() ?: 0,
             numberOfRatedPlayers = data[TournamentDataCode.NumberOfRatedPlayers]?.first()?.toIntOrNull() ?: 0,
             numberOfTeams = data[TournamentDataCode.NumberOfTeams]?.first()?.toIntOrNull() ?: 0,
@@ -53,30 +54,27 @@ class TrfParser {
                 ?: emptyList(),
             rateOfPlay = data[TournamentDataCode.AllotedTimes]?.first() ?: "",
             roundDates = data[TournamentDataCode.RoundDates]?.let { getRoundDates(it.first()) } ?: emptyList(),
-            playersData = data[TournamentDataCode.PlayerData]?.map { getPlayerData(it) } ?: emptyList(),
-            teamsData = data[TournamentDataCode.TeamData]?.map { getTeamData(it) } ?: emptyList()
+            playersData = data[TournamentDataCode.PlayerData]?.map { playerDataParser.parse(it) } ?: emptyList(),
+            teamsData = data[TournamentDataCode.TeamData]?.map { teamDataParser.parse(it) } ?: emptyList()
         )
     }
 
     private fun extractLineValue(line: String): String =
-        if (line.length > LINE_CODE_LENGTH) line.substring(
-            LINE_CODE_LENGTH
-        ) else ""
+        if (line.length > LINE_CODE_LENGTH) {
+            line.substring(LINE_CODE_LENGTH)
+        } else {
+            ""
+        }
 
     private fun getFederation(federationLine: String): Federation =
         Federation(federationLine)
 
-    private fun getDate(dateLine: String): LocalDate = LocalDate.parse(dateLine, START_END_DATE_FORMAT)
-
     private fun getRoundDates(roundDatesLine: String): List<LocalDate> = roundDatesLine
-        .split("\\s+".toRegex())
-        .map { LocalDate.parse(it.trim(), ROUND_DATE_FORMAT) }
+        .splitByWhitespace()
+        .map { LocalDate.parse(it, ROUND_DATE_FORMAT) }
 
     private fun getArbiter(arbiterLine: String): Arbiter {
-        val parts = arbiterLine
-            .split("\\s+".toRegex())
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        val parts = arbiterLine.splitByWhitespace()
         return Arbiter(
             name = parts[1],
             id = if (parts.size > 2) parts[2].substring(1, parts[2].length - 1) else "",
@@ -84,83 +82,19 @@ class TrfParser {
         )
     }
 
-    private fun getPlayerData(playerLine: String): PlayerData {
-        println(playerLine)
-        return PlayerData(
-            startRank = playerLine.substring(0, 4).trim().toInt(),
-            gender = Gender.from(playerLine[5]),
-            title = Title.from(playerLine.substring(6, 9).trim()),
-            name = playerLine.substring(10, 43).trim(),
-            fideRating = playerLine.substring(44, 48).trim().toInt(),
-            federation = Federation(playerLine.substring(49, 52).trim()),
-            fideId = playerLine.substring(53, 64).trim().toLong(),
-            birthDate = getBirthDate(playerLine.substring(65, 75).trim()),
-            points = playerLine.substring(76, 80).trim().toDouble(),
-            rank = playerLine.substring(81, 85).trim().toInt(),
-            results = getPlayerResults(playerLine.substring(87))
-        )
-    }
-
-    private fun getBirthDate(formattedDate: String): Option<LocalDate> =
-        parseDate(formattedDate, BIRTH_DATE_FORMAT, YEAR_ONLY_FORMAT)
-
-    private fun getPlayerResults(results: String): List<PlayerGameResult> {
-        tailrec fun readPlayerResult(
-            readResults: List<PlayerGameResult>,
-            missingResults: String
-        ): List<PlayerGameResult> =
-            if (missingResults.isBlank()) {
-                readResults
-            } else {
-                val resultString = missingResults.take(RESULT_LENGTH)
-                val result = PlayerGameResult(
-                    opponentId = PlayerId(
-                        resultString.substring(
-                            0,
-                            5
-                        ).trim()
-                    ),
-                    gameColor = GameColor.from(resultString.substring(5, 7).trim())
-                        .getOrElse { GameColor.NotPaired },
-                    result = GameResult.from(resultString.substring(7).trim())
-                        .getOrElse { GameResult.ZeroPointBye }
-                )
-                readPlayerResult(readResults + result, missingResults.drop(10))
-            }
-        return readPlayerResult(mutableListOf(), results)
-    }
-
-    private fun getTeamData(teamLine: String): TeamData {
-        val parts = teamLine.splitByWhitespace()
-        val teamName = parts[0]
-        tailrec fun readTeamMember(teamLineParts: List<String>, teamMembers: List<PlayerId>): List<PlayerId> =
-            if (teamLineParts.isEmpty()) teamMembers
-            else readTeamMember(
-                teamLineParts.drop(1), teamMembers + PlayerId(
-                    teamLineParts.first().trim()
-                )
-            )
-
-        val players = readTeamMember(parts.drop(1), mutableListOf())
-        return TeamData(
-            name = teamName,
-            players = players
-        )
-    }
-
     private fun extractLineCode(line: String): TournamentDataCode {
-        val code = line.substring(0, 4).trim()
+        val code = line.substring(0, LINE_CODE_LENGTH).trim()
         return TournamentDataCode
             .from(code)
             .getOrElse { TournamentDataCode.Unknown }
     }
 
     companion object {
+        private const val LINE_CODE_LENGTH = 4
+
         object PlayerResult {
             const val RESULT_LENGTH = 10
         }
-
-        private const val LINE_CODE_LENGTH = 4
 
         object DateFormats {
             val START_END_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
