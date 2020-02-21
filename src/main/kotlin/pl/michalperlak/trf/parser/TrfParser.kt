@@ -1,8 +1,14 @@
-package pl.michalperlak.trf
+package pl.michalperlak.trf.parser
 
-import arrow.core.Try
-import arrow.core.getOrElse
-import arrow.core.toOption
+import arrow.core.*
+import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.BIRTH_DATE_FORMAT
+import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.ROUND_DATE_FORMAT
+import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.START_END_DATE_FORMAT
+import pl.michalperlak.trf.parser.TrfParser.Companion.DateFormats.YEAR_ONLY_FORMAT
+import pl.michalperlak.trf.parser.TrfParser.Companion.PlayerResult.RESULT_LENGTH
+import pl.michalperlak.trf.model.*
+import pl.michalperlak.trf.util.parseDate
+import pl.michalperlak.trf.util.splitByWhitespace
 import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
@@ -53,9 +59,12 @@ class TrfParser {
     }
 
     private fun extractLineValue(line: String): String =
-        if (line.length > LINE_CODE_LENGTH) line.substring(LINE_CODE_LENGTH) else ""
+        if (line.length > LINE_CODE_LENGTH) line.substring(
+            LINE_CODE_LENGTH
+        ) else ""
 
-    private fun getFederation(federationLine: String): Federation = Federation(federationLine)
+    private fun getFederation(federationLine: String): Federation =
+        Federation(federationLine)
 
     private fun getDate(dateLine: String): LocalDate = LocalDate.parse(dateLine, START_END_DATE_FORMAT)
 
@@ -85,14 +94,15 @@ class TrfParser {
             fideRating = playerLine.substring(44, 48).trim().toInt(),
             federation = Federation(playerLine.substring(49, 52).trim()),
             fideId = playerLine.substring(53, 64).trim().toLong(),
-            birthDate = Try.invoke { getBirthDate(playerLine.substring(65, 75).trim()) }.toOption(),
+            birthDate = getBirthDate(playerLine.substring(65, 75).trim()),
             points = playerLine.substring(76, 80).trim().toDouble(),
             rank = playerLine.substring(81, 85).trim().toInt(),
             results = getPlayerResults(playerLine.substring(87))
         )
     }
 
-    private fun getBirthDate(formattedDate: String): LocalDate = LocalDate.parse(formattedDate, BIRTH_DATE_FORMAT)
+    private fun getBirthDate(formattedDate: String): Option<LocalDate> =
+        parseDate(formattedDate, BIRTH_DATE_FORMAT, YEAR_ONLY_FORMAT)
 
     private fun getPlayerResults(results: String): List<PlayerGameResult> {
         tailrec fun readPlayerResult(
@@ -102,12 +112,17 @@ class TrfParser {
             if (missingResults.isBlank()) {
                 readResults
             } else {
-                val resultString = missingResults.take(10)
+                val resultString = missingResults.take(RESULT_LENGTH)
                 val result = PlayerGameResult(
-                    opponentId = PlayerId(resultString.substring(0, 5).trim()),
+                    opponentId = PlayerId(
+                        resultString.substring(
+                            0,
+                            5
+                        ).trim()
+                    ),
                     gameColor = GameColor.from(resultString.substring(5, 7).trim())
                         .getOrElse { GameColor.NotPaired },
-                    result = GameResult.from(resultString.substring(8).trim())
+                    result = GameResult.from(resultString.substring(7).trim())
                         .getOrElse { GameResult.ZeroPointBye }
                 )
                 readPlayerResult(readResults + result, missingResults.drop(10))
@@ -116,14 +131,15 @@ class TrfParser {
     }
 
     private fun getTeamData(teamLine: String): TeamData {
-        val parts = teamLine
-            .split("\\s+".toRegex())
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
+        val parts = teamLine.splitByWhitespace()
         val teamName = parts[0]
         tailrec fun readTeamMember(teamLineParts: List<String>, teamMembers: List<PlayerId>): List<PlayerId> =
             if (teamLineParts.isEmpty()) teamMembers
-            else readTeamMember(teamLineParts.drop(1), teamMembers + PlayerId(teamLineParts.first().trim()))
+            else readTeamMember(
+                teamLineParts.drop(1), teamMembers + PlayerId(
+                    teamLineParts.first().trim()
+                )
+            )
 
         val players = readTeamMember(parts.drop(1), mutableListOf())
         return TeamData(
@@ -140,9 +156,17 @@ class TrfParser {
     }
 
     companion object {
+        object PlayerResult {
+            const val RESULT_LENGTH = 10
+        }
+
         private const val LINE_CODE_LENGTH = 4
-        private val START_END_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-        private val ROUND_DATE_FORMAT = DateTimeFormatter.ofPattern("yy/MM/dd")
-        private val BIRTH_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd")
+
+        object DateFormats {
+            val START_END_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            val ROUND_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yy/MM/dd")
+            val BIRTH_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
+            val YEAR_ONLY_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy")
+        }
     }
 }

@@ -5,6 +5,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import org.junit.jupiter.params.provider.ArgumentsSource
+import pl.michalperlak.trf.model.TournamentData
+import pl.michalperlak.trf.parser.TrfParser
 import java.io.InputStream
 import java.util.stream.Stream
 
@@ -18,7 +20,7 @@ class TrfParserTest {
             parser.parse(it)
         }.fold({ it.printStackTrace(); null }, { it })
 
-        println(tournamentData)
+//        println(tournamentData)
     }
 
     private fun inputStream(resourcePath: String): InputStream =

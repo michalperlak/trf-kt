@@ -1,4 +1,4 @@
-package pl.michalperlak.trf
+package pl.michalperlak.trf.model
 
 import arrow.core.Option
 import java.time.LocalDate

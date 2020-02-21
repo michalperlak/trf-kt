@@ -1,6 +1,6 @@
-package pl.michalperlak.trf
+package pl.michalperlak.trf.model
 
-class PlayerId(
+data class PlayerId(
     val id: String
 ) {
 

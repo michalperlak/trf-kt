@@ -1,4 +1,4 @@
-package pl.michalperlak.trf
+package pl.michalperlak.trf.model
 
 enum class Gender {
     Male, Female;

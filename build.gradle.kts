@@ -11,7 +11,7 @@ repositories {
     mavenCentral()
 }
 
-val arrowVersion = "0.8.2"
+val arrowVersion = "0.10.4"
 val junitVersion = "5.3.2"
 dependencies {
     implementation(kotlin("stdlib-jdk8"))

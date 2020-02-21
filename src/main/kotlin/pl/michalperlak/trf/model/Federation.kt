@@ -1,4 +1,4 @@
-package pl.michalperlak.trf
+package pl.michalperlak.trf.model
 
 data class Federation(
     val name: String
