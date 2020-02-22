@@ -1,8 +1,8 @@
-package pl.michalperlak.trf.model
+package pl.michalperlak.trf.parser
 
 import arrow.core.Option
 
-enum class TournamentDataCode(
+internal enum class TournamentDataCode(
     val code: String
 ) {
     TournamentName("012"),

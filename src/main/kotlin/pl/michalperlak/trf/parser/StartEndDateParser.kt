@@ -1,21 +1,18 @@
 package pl.michalperlak.trf.parser
 
-import pl.michalperlak.trf.model.TournamentDataCode
 import java.time.LocalDate
-import java.util.*
+import java.time.format.DateTimeFormatter
 
-class StartEndDateParser(
+internal class StartEndDateParser(
     private val defaultValue: LocalDate
 ) : EntryParser<LocalDate> {
-    override val codes: Set<TournamentDataCode>
-        get() = EnumSet.of(TournamentDataCode.DateOfStart, TournamentDataCode.DateOfEnd)
 
-    override fun parse(values: List<String>?): LocalDate {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun parse(values: List<String>?): LocalDate =
+        values?.firstOrNull()?.let(::parseDate) ?: defaultValue
+
+    private fun parseDate(dateLine: String): LocalDate = LocalDate.parse(dateLine, START_END_DATE_FORMAT)
+
+    companion object {
+        val START_END_DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     }
-
-    private fun getDate(dateLine: String): LocalDate = LocalDate.parse(
-        dateLine,
-        TrfParser.Companion.DateFormats.START_END_DATE_FORMAT
-    )
 }

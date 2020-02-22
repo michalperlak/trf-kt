@@ -1,7 +1,5 @@
 package pl.michalperlak.trf.model
 
-import arrow.core.Option
-
 enum class GameResult(
     vararg val codes: String
 ) {
@@ -19,9 +17,7 @@ enum class GameResult(
     ZeroPointBye("Z", "");
 
     companion object {
-        fun from(code: String): Option<GameResult> = Option.fromNullable(
-            values()
-                .firstOrNull { it.codes.contains(code) }
-        )
+        fun from(code: String, default: GameResult = ZeroPointBye): GameResult =
+            values().firstOrNull { it.codes.contains(code) } ?: default
     }
 }

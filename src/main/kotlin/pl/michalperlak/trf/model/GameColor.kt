@@ -1,7 +1,5 @@
 package pl.michalperlak.trf.model
 
-import arrow.core.Option
-
 enum class GameColor(
     vararg val codes: String
 ) {
@@ -10,9 +8,7 @@ enum class GameColor(
     NotPaired("-", "");
 
     companion object {
-        fun from(code: String): Option<GameColor> = Option.fromNullable(
-            values()
-                .firstOrNull { it.codes.contains(code) }
-        )
+        fun from(code: String, default: GameColor = NotPaired): GameColor =
+            values().firstOrNull { it.codes.contains(code) } ?: default
     }
 }

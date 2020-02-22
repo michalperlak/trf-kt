@@ -20,7 +20,7 @@ class TrfParserTest {
             parser.parse(it)
         }.fold({ it.printStackTrace(); null }, { it })
 
-//        println(tournamentData)
+      println(tournamentData)
     }
 
     private fun inputStream(resourcePath: String): InputStream =

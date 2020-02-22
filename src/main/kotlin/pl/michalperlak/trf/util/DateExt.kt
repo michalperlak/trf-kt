@@ -6,17 +6,20 @@ import java.lang.Exception
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-fun parseDate(value: String, vararg formats: DateTimeFormatter): Option<LocalDate> {
-    fun tryParse(
+internal fun parseDate(value: String, vararg formats: DateTimeFormatter): Option<LocalDate> {
+    tailrec fun tryParse(
         current: Option<LocalDate>,
         formats: List<DateTimeFormatter>
     ): Option<LocalDate> =
-        if (current.isDefined()) {
-            current
-        } else {
-            val parsed = formats.firstOrNone().flatMap { tryParseDate(value, it) }
-            tryParse(parsed, formats.drop(1))
+        when {
+            current.isDefined() -> current
+            formats.isEmpty() -> Option.empty()
+            else -> {
+                val parsed = formats.firstOrNone().flatMap { tryParseDate(value, it) }
+                tryParse(parsed, formats.drop(1))
+            }
         }
+
     return tryParse(Option.empty(), formats.toList())
 }
 

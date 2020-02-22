@@ -5,7 +5,7 @@ import java.time.LocalDate
 
 data class PlayerData(
     val startRank: Int,
-    val gender: Gender,
+    val gender: Option<Gender>,
     val title: Option<Title>,
     val name: String,
     val fideRating: Int,
