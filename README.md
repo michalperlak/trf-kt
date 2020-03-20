@@ -10,4 +10,4 @@
 
 TRF (Tournament Report File) is an agreed general data-exchange format for tournament results to be submitted to FIDE.
 
-Current version is described on https://www.fide.com/FIDE/handbook/C04Annex2_TRF16.pdf
+Current version is described on [FIDE offcial website](https://www.fide.com/FIDE/handbook/C04Annex2_TRF16.pdf)
